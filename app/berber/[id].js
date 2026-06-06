@@ -140,6 +140,31 @@ export default function BerberProfilScreen() {
           ))}
         </View>
 
+        {/* Yorumlar */}
+        <Text style={styles.bolumBaslik}>💬 Yorumlar</Text>
+        <View style={styles.yorumlarListesi}>
+          {berber.yorumlar && berber.yorumlar.map((y, i) => (
+            <View key={i} style={styles.yorumKart}>
+              <View style={styles.yorumUst}>
+                <View style={styles.yorumAvatar}>
+                  <Text style={styles.yorumAvatarText}>{y.ad[0]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.yorumAd}>{y.ad}</Text>
+                  <View style={styles.yorumPuanRow}>
+                    {[1,2,3,4,5].map(s => (
+                      <Ionicons key={s} name="star" size={11}
+                        color={s <= y.puan ? Colors.gold : Colors.grayDark} />
+                    ))}
+                  </View>
+                </View>
+                <Text style={styles.yorumTarih}>{y.tarih}</Text>
+              </View>
+              <Text style={styles.yorumMetin}>{y.yorum}</Text>
+            </View>
+          ))}
+        </View>
+
         <View style={{ height: 120 }} />
       </ScrollView>
 
@@ -256,6 +281,23 @@ const styles = StyleSheet.create({
   },
   galeriRow: { paddingHorizontal: 20, gap: 10 },
   galeriItem: { width: 140, height: 140, borderRadius: 14 },
+  yorumlarListesi: { marginHorizontal: 20, gap: 10 },
+  yorumKart: {
+    backgroundColor: Colors.card, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: Colors.cardBorder, gap: 10,
+  },
+  yorumUst: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  yorumAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(201,168,76,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(201,168,76,0.3)',
+  },
+  yorumAvatarText: { fontSize: 15, fontWeight: '800', color: Colors.gold },
+  yorumAd: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  yorumPuanRow: { flexDirection: 'row', gap: 2, marginTop: 2 },
+  yorumTarih: { fontSize: 11, color: Colors.gray },
+  yorumMetin: { fontSize: 13, color: Colors.gray, lineHeight: 20 },
   hizmetlerListesi: { marginHorizontal: 20, gap: 10 },
   hizmetRow: {
     flexDirection: 'row',
