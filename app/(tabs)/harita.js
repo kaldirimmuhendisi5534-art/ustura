@@ -1,5 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, TouchableOpacity,
+  ScrollView, Dimensions,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,195 +11,299 @@ import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { BERBERLER } from '../../constants/mockData';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+
+// Harita üzerindeki pin pozisyonları (ekranın %'si)
+const PIN_POSITIONS = [
+  { left: '28%', top: '35%' },
+  { left: '55%', top: '25%' },
+  { left: '42%', top: '55%' },
+  { left: '70%', top: '45%' },
+  { left: '18%', top: '60%' },
+  { left: '60%', top: '65%' },
+];
 
 export default function HaritaScreen() {
   const router = useRouter();
+  const [seciliBerber, setSeciliBerber] = useState(null);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.baslik}>
-        <Text style={styles.baslikText}>📍 Haritada Bul</Text>
-        <TouchableOpacity style={styles.konumBtn}>
-          <Ionicons name="locate" size={18} color={Colors.gold} />
-          <Text style={styles.konumText}>Konumumu Kullan</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Harita Placeholder */}
-      <View style={styles.haritaKutu}>
+    <View style={styles.container}>
+      {/* Harita */}
+      <View style={styles.haritaContainer}>
         <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=900&q=80' }}
+          source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&q=85' }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
-          transition={300}
+          transition={400}
         />
-        <LinearGradient
-          colors={['transparent', 'rgba(10,10,10,0.6)']}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Berber İşaretçileri */}
-        {BERBERLER.slice(0, 3).map((b, i) => (
-          <View
-            key={b.id}
-            style={[
-              styles.isaret,
-              { top: 60 + i * 70, left: 40 + i * 80 },
-            ]}
-          >
+        {/* Koyu overlay */}
+        <View style={styles.haritaOverlay} />
+
+        {/* Berber pinleri */}
+        {BERBERLER.map((b, i) => {
+          const pos = PIN_POSITIONS[i] || { left: '50%', top: '50%' };
+          const aktif = seciliBerber?.id === b.id;
+          return (
             <TouchableOpacity
-              onPress={() => router.push(`/berber/${b.id}`)}
-              style={styles.isaretBtn}
+              key={b.id}
+              style={[styles.pin, pos, aktif && styles.pinAktif]}
+              onPress={() => setSeciliBerber(aktif ? null : b)}
+              activeOpacity={0.85}
             >
-              <Text style={styles.isaretEmoji}>💈</Text>
-              <View style={styles.isaretBilgi}>
-                <Text style={styles.isaretAd}>{b.ad.split(' ')[0]}</Text>
-                <Text style={styles.isaretFiyat}>₺{b.hizmetler[0].fiyat}</Text>
+              <View style={[styles.pinIceri, aktif && styles.pinIceriAktif]}>
+                <Text style={styles.pinFiyat}>₺{b.hizmetler[0].fiyat}</Text>
               </View>
+              <View style={[styles.pinOk, aktif && styles.pinOkAktif]} />
             </TouchableOpacity>
+          );
+        })}
+
+        {/* Üst bar */}
+        <SafeAreaView edges={['top']} style={styles.ustBar}>
+          <View style={styles.aramaKutu}>
+            <Ionicons name="search" size={16} color={Colors.gray} />
+            <Text style={styles.aramaPlaceholder}>Semt veya berber ara...</Text>
           </View>
-        ))}
+          <TouchableOpacity style={styles.filtreBtnMap}>
+            <Ionicons name="options-outline" size={18} color={Colors.gold} />
+          </TouchableOpacity>
+        </SafeAreaView>
 
-        <View style={styles.haritaOvOrlay}>
-          <Ionicons name="map" size={20} color={Colors.gold} />
-          <Text style={styles.haritaInfo}>Yakın berberler işaretlendi</Text>
-        </View>
-      </View>
+        {/* Konumum butonu */}
+        <TouchableOpacity style={styles.konumBtn}>
+          <Ionicons name="locate" size={20} color={Colors.gold} />
+        </TouchableOpacity>
 
-      {/* Yakın Berberler Listesi */}
-      <Text style={styles.yakinBaslik}>📍 En Yakın Berberler</Text>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-        {BERBERLER.map((berber) => (
+        {/* Seçili berber popup */}
+        {seciliBerber && (
           <TouchableOpacity
-            key={berber.id}
-            style={styles.listeKart}
-            onPress={() => router.push(`/berber/${berber.id}`)}
+            style={styles.popupKart}
+            onPress={() => router.push(`/berber/${seciliBerber.id}`)}
+            activeOpacity={0.92}
           >
             <Image
-              source={{ uri: berber.profilFoto }}
-              style={styles.avatar}
+              source={{ uri: seciliBerber.kapakFoto }}
+              style={styles.popupFoto}
               contentFit="cover"
             />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.listeAd}>{berber.dukkAn}</Text>
-              <View style={styles.listeRow}>
+            <View style={styles.popupBilgi}>
+              <Text style={styles.popupAd} numberOfLines={1}>{seciliBerber.dukkAn}</Text>
+              <View style={styles.popupMeta}>
                 <Ionicons name="location-outline" size={12} color={Colors.gold} />
-                <Text style={styles.listeIlce}>{berber.ilce} • {berber.mesafe}</Text>
+                <Text style={styles.popupMetaText}>{seciliBerber.ilce} · {seciliBerber.mesafe}</Text>
               </View>
-              <View style={styles.listeRow}>
-                <Ionicons name="star" size={11} color={Colors.gold} />
-                <Text style={styles.listePuan}>{berber.puan}</Text>
-                <Text style={styles.listeYorum}>({berber.yorumSayisi})</Text>
-              </View>
-            </View>
-            <View style={styles.listeSag}>
-              <Text style={styles.listeFiyat}>₺{berber.hizmetler[0].fiyat}</Text>
-              <Text style={styles.listeBaslayanText}>başlayan</Text>
-              <View style={styles.musaitRow}>
-                <View style={styles.musaitDot} />
-                <Text style={styles.musaitText}>{berber.bugunMusait}</Text>
+              <View style={styles.popupAlt}>
+                <View style={styles.puanRow}>
+                  <Ionicons name="star" size={12} color={Colors.gold} />
+                  <Text style={styles.puanText}>{seciliBerber.puan}</Text>
+                </View>
+                <Text style={styles.popupFiyat}>₺{seciliBerber.hizmetler[0].fiyat}'den</Text>
               </View>
             </View>
+            <Ionicons name="chevron-forward" size={18} color={Colors.gray} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+        )}
+      </View>
+
+      {/* Alt liste */}
+      <View style={styles.altListe}>
+        <View style={styles.altBaslik}>
+          <Text style={styles.altBaslikText}>Yakınındaki Berberler</Text>
+          <Text style={styles.altAdet}>{BERBERLER.length} sonuç</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.yatayListeRow}
+        >
+          {BERBERLER.map((b) => {
+            const minFiyat = Math.min(...b.hizmetler.map(h => h.fiyat));
+            const aktif = seciliBerber?.id === b.id;
+            return (
+              <TouchableOpacity
+                key={b.id}
+                style={[styles.miniKart, aktif && styles.miniKartAktif]}
+                onPress={() => {
+                  setSeciliBerber(b);
+                  router.push(`/berber/${b.id}`);
+                }}
+                activeOpacity={0.85}
+              >
+                <Image
+                  source={{ uri: b.kapakFoto }}
+                  style={styles.miniKartFoto}
+                  contentFit="cover"
+                />
+                <View style={styles.miniKartBilgi}>
+                  <Text style={styles.miniKartAd} numberOfLines={1}>{b.dukkAn}</Text>
+                  <View style={styles.miniKartMeta}>
+                    <Ionicons name="location-outline" size={10} color={Colors.gold} />
+                    <Text style={styles.miniKartMetaText}>{b.mesafe}</Text>
+                    <Ionicons name="star" size={10} color={Colors.gold} />
+                    <Text style={styles.miniKartMetaText}>{b.puan}</Text>
+                  </View>
+                  <Text style={styles.miniKartFiyat}>₺{minFiyat}'den</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg },
-  baslik: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+
+  // Harita
+  haritaContainer: { flex: 1, position: 'relative' },
+  haritaOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(10,10,10,0.35)',
   },
-  baslikText: { fontSize: 22, fontWeight: '800', color: Colors.white },
-  konumBtn: {
-    flexDirection: 'row',
+
+  // Pinler
+  pin: {
+    position: 'absolute',
     alignItems: 'center',
+    transform: [{ translateX: -28 }, { translateY: -36 }],
+  },
+  pinAktif: { zIndex: 10 },
+  pinIceri: {
     backgroundColor: Colors.card,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: Colors.cardBorder,
-  },
-  konumText: { fontSize: 12, color: Colors.gold, fontWeight: '600' },
-  haritaKutu: {
-    height: 220,
-    marginHorizontal: 16,
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  isaret: {
-    position: 'absolute',
-  },
-  isaretBtn: {
-    backgroundColor: '#0A0A0A',
-    borderRadius: 12,
-    padding: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 2,
-    borderColor: Colors.gold,
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  isaretEmoji: { fontSize: 16 },
-  isaretBilgi: {},
-  isaretAd: { fontSize: 11, fontWeight: '700', color: Colors.white },
-  isaretFiyat: { fontSize: 10, color: Colors.gold },
-  haritaOvOrlay: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    gap: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.cardBorder,
   },
-  haritaInfo: { fontSize: 11, color: Colors.white },
-  yakinBaslik: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.white,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 10,
+  pinIceriAktif: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
   },
-  listeKart: {
+  pinFiyat: { fontSize: 12, fontWeight: '800', color: Colors.white },
+  pinOk: {
+    width: 0, height: 0,
+    borderLeftWidth: 6, borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: Colors.cardBorder,
+    marginTop: -1,
+  },
+  pinOkAktif: { borderTopColor: Colors.gold },
+
+  // Üst bar
+  ustBar: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingBottom: 8,
+  },
+  aramaKutu: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15,15,15,0.9)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  aramaPlaceholder: { flex: 1, fontSize: 14, color: Colors.gray },
+  filtreBtnMap: {
+    backgroundColor: 'rgba(15,15,15,0.9)',
+    borderRadius: 14,
+    width: 46,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+
+  // Konum butonu
+  konumBtn: {
+    position: 'absolute',
+    bottom: 180,
+    right: 16,
     backgroundColor: Colors.card,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
+    borderRadius: 14,
+    width: 46,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.cardBorder,
   },
-  avatar: { width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: Colors.gold },
-  listeAd: { fontSize: 15, fontWeight: '700', color: Colors.white, marginBottom: 4 },
-  listeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
-  listeIlce: { fontSize: 12, color: Colors.gray },
-  listePuan: { fontSize: 12, fontWeight: '700', color: Colors.white },
-  listeYorum: { fontSize: 11, color: Colors.gray },
-  listeSag: { alignItems: 'flex-end' },
-  listeFiyat: { fontSize: 18, fontWeight: '800', color: Colors.gold },
-  listeBaslayanText: { fontSize: 10, color: Colors.gray },
-  musaitRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  musaitDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.green },
-  musaitText: { fontSize: 11, color: Colors.green, fontWeight: '600' },
+
+  // Popup
+  popupKart: {
+    position: 'absolute',
+    bottom: 170,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20,20,20,0.96)',
+    borderRadius: 18,
+    padding: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  popupFoto: { width: 56, height: 56, borderRadius: 12 },
+  popupBilgi: { flex: 1 },
+  popupAd: { fontSize: 14, fontWeight: '700', color: Colors.white, marginBottom: 3 },
+  popupMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 5 },
+  popupMetaText: { fontSize: 11, color: Colors.gray },
+  popupAlt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  puanRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  puanText: { fontSize: 12, fontWeight: '700', color: Colors.gold },
+  popupFiyat: { fontSize: 14, fontWeight: '700', color: Colors.white },
+
+  // Alt liste
+  altListe: {
+    backgroundColor: Colors.bg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.cardBorder,
+    paddingTop: 12,
+    paddingBottom: 16,
+  },
+  altBaslik: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  altBaslikText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  altAdet: { fontSize: 12, color: Colors.gray },
+  yatayListeRow: { paddingHorizontal: 16, gap: 10 },
+
+  // Mini kart
+  miniKart: {
+    width: 160,
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
+  miniKartAktif: { borderColor: Colors.gold },
+  miniKartFoto: { width: '100%', height: 80 },
+  miniKartBilgi: { padding: 10 },
+  miniKartAd: { fontSize: 12, fontWeight: '700', color: Colors.white, marginBottom: 4 },
+  miniKartMeta: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4,
+  },
+  miniKartMetaText: { fontSize: 10, color: Colors.gray },
+  miniKartFiyat: { fontSize: 12, fontWeight: '700', color: Colors.gold },
 });
