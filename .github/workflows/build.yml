@@ -39,13 +39,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Create C-slash-u junction for short path
+      - name: Map U drive to workspace parent for short paths
         shell: powershell
         run: |
-          if (Test-Path "C:\u") { cmd /c rmdir "C:\u" 2>$null }
-          cmd /c mklink /J C:\u "$env:GITHUB_WORKSPACE"
-          Write-Host "C:\u -> $env:GITHUB_WORKSPACE"
-          Write-Host "package.json exists: $(Test-Path 'C:\u\package.json')"
+          $parent = Split-Path "$env:GITHUB_WORKSPACE" -Parent
+          subst U: $parent 2>$null
+          $repoName = Split-Path "$env:GITHUB_WORKSPACE" -Leaf
+          Add-Content $env:GITHUB_ENV "REPO_NAME=$repoName"
+          Write-Host "U: = $parent"
+          Write-Host "Project at: U:\$repoName"
+          Write-Host "package.json: $(Test-Path "U:\$repoName\package.json")"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,12 +57,12 @@ jobs:
 
       - name: Install Dependencies
         shell: bash
-        run: cd /c/u && npm install --legacy-peer-deps
+        run: cd /u/$REPO_NAME && npm install --legacy-peer-deps
 
       - name: Expo Prebuild
         shell: bash
         run: |
-          cd /c/u
+          cd /u/$REPO_NAME
           npx expo prebuild --platform android --non-interactive --clean
 
       - name: Gradle Build
@@ -71,7 +74,7 @@ jobs:
           PROFILE="${{ github.event.inputs.profile }}"
           KEYSTORE_WIN=$(powershell.exe -Command "echo \$env:USERPROFILE" | tr -d '\r')
           KEYSTORE="$KEYSTORE_WIN/.android/debug.keystore"
-          cd /c/u/android
+          cd /u/$REPO_NAME/android
           if [ "$PROFILE" = "production" ]; then
             ./gradlew bundleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
