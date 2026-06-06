@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLang } from '../../context/LanguageContext';
 
 function TabIcon({ name, color, focused }) {
@@ -27,6 +28,7 @@ const styles = StyleSheet.create({
 
 export default function TabLayout() {
   const { t } = useLang();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -36,8 +38,8 @@ export default function TabLayout() {
           backgroundColor: '#0F0F0F',
           borderTopColor: '#1E1E1E',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 66,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
           paddingTop: 8,
           elevation: 0,
           shadowOpacity: 0,
