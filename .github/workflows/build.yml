@@ -62,6 +62,23 @@ jobs:
         shell: bash
         run: cd /c/p && npx expo prebuild --platform android --non-interactive --clean
 
+      - name: Patch reanimated cmake if present
+        shell: bash
+        run: |
+          REAN_CMAKE="/c/p/node_modules/react-native-reanimated/android/src/main/cpp/worklets/CMakeLists.txt"
+          if [ -f "$REAN_CMAKE" ]; then
+            echo "react-native-reanimated found as transitive dep - patching cmake hermes dependency"
+            # Replace hermes-engine::libhermes with empty string in all reanimated cmake files
+            find /c/p/node_modules/react-native-reanimated/android/src/main/cpp -name "CMakeLists.txt" | while read f; do
+              sed -i 's/ hermes-engine::libhermes//g' "$f"
+              echo "Patched: $f"
+            done
+            # Also patch the root CMakeLists.txt
+            sed -i 's/ hermes-engine::libhermes//g' /c/p/node_modules/react-native-reanimated/android/CMakeLists.txt 2>/dev/null || true
+          else
+            echo "react-native-reanimated not in node_modules - no patch needed"
+          fi
+
       - name: Gradle Build
         shell: bash
         env:
