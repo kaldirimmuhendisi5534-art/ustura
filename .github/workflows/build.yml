@@ -36,24 +36,18 @@ jobs:
           Write-Host "JAVA_HOME=$javaHome"
           Write-Host "ANDROID_HOME=$androidHome"
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Map U drive to workspace parent for short paths
+      - name: Clone to short path C-slash-p
         shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $ws     = $env:GITHUB_WORKSPACE
-          $parent = Split-Path $ws -Parent
-          $leaf   = Split-Path $ws -Leaf
-          subst U: /D 2>$null
-          subst U: $parent
-          if ($LASTEXITCODE -ne 0) { throw "subst failed: $LASTEXITCODE" }
-          $pkgPath = "U:\$leaf\package.json"
-          if (-not (Test-Path $pkgPath)) { throw "package.json not found at $pkgPath" }
-          Add-Content $env:GITHUB_ENV "REPO_NAME=$leaf"
-          Write-Host "U: -> $parent"
-          Write-Host "Project: U:\$leaf"
-          Write-Host "package.json OK: $pkgPath"
+          if (Test-Path "C:\p") { Remove-Item -Recurse -Force "C:\p" }
+          $repo = "${{ github.repository }}"
+          $ref  = "${{ github.ref_name }}"
+          git clone --depth 1 --branch $ref "https://x-access-token:$env:GITHUB_TOKEN@github.com/$repo.git" "C:\p"
+          if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
+          Write-Host "Cloned to C:\p"
+          Write-Host "package.json: $(Test-Path 'C:\p\package.json')"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -62,13 +56,11 @@ jobs:
 
       - name: Install Dependencies
         shell: bash
-        run: cd /u/$REPO_NAME && npm install --legacy-peer-deps
+        run: cd /c/p && npm install --legacy-peer-deps
 
       - name: Expo Prebuild
         shell: bash
-        run: |
-          cd /u/$REPO_NAME
-          npx expo prebuild --platform android --non-interactive --clean
+        run: cd /c/p && npx expo prebuild --platform android --non-interactive --clean
 
       - name: Gradle Build
         shell: bash
@@ -79,23 +71,23 @@ jobs:
           PROFILE="${{ github.event.inputs.profile }}"
           KEYSTORE_WIN=$(powershell.exe -Command "echo \$env:USERPROFILE" | tr -d '\r')
           KEYSTORE="$KEYSTORE_WIN/.android/debug.keystore"
-          cd /u/$REPO_NAME/android
+          cd /c/p/android
           if [ "$PROFILE" = "production" ]; then
             ./gradlew bundleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
               -Pandroid.injected.signing.store.password=android \
               -Pandroid.injected.signing.key.alias=androiddebugkey \
               -Pandroid.injected.signing.key.password=android
-            cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/ustura.aab"
+            cp app/build/outputs/bundle/release/app-release.aab /c/p/ustura.aab
           else
             ./gradlew assembleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
               -Pandroid.injected.signing.store.password=android \
               -Pandroid.injected.signing.key.alias=androiddebugkey \
               -Pandroid.injected.signing.key.password=android
-            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/ustura.apk"
+            cp app/build/outputs/apk/release/app-release.apk /c/p/ustura.apk
           fi
-          ls -lh "$GITHUB_WORKSPACE/ustura"*
+          ls -lh /c/p/ustura*
 
       - name: Create GitHub Release
         shell: bash
@@ -103,7 +95,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="build-${{ github.run_number }}"
-          gh release create "$TAG" "$GITHUB_WORKSPACE"/ustura* \
+          gh release create "$TAG" /c/p/ustura* \
             --title "Ustura Build ${{ github.run_number }}" \
             --notes "Ustura APK - Build ${{ github.run_number }} - Branch ${{ github.ref_name }}" \
-            --prerelease
+            --prerelease \
+            --repo ${{ github.repository }}
