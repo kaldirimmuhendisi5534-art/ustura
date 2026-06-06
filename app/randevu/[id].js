@@ -12,18 +12,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { BERBERLER } from '../../constants/mockData';
+import { useLang } from '../../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
-
-const GUNLER = [
-  { gun: 'Bugün', tarih: '7 Haz', uygun: true },
-  { gun: 'Yarın', tarih: '8 Haz', uygun: true },
-  { gun: 'Paz', tarih: '9 Haz', uygun: true },
-  { gun: 'Pzt', tarih: '10 Haz', uygun: false },
-  { gun: 'Sal', tarih: '11 Haz', uygun: true },
-  { gun: 'Çar', tarih: '12 Haz', uygun: true },
-  { gun: 'Per', tarih: '13 Haz', uygun: true },
-];
 
 const SAATLER = [
   '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
@@ -36,11 +27,22 @@ const DOLU_SAATLER = ['10:00', '11:30', '14:00', '16:00'];
 export default function RandevuScreen() {
   const { id, hizmet, fiyat } = useLocalSearchParams();
   const router = useRouter();
+  const { t, isRTL } = useLang();
   const berber = BERBERLER.find((b) => b.id === id) || BERBERLER[0];
 
   const [seciliGun, setSeciliGun] = useState(0);
   const [seciliSaat, setSeciliSaat] = useState(null);
   const [onaylandi, setOnaylandi] = useState(false);
+
+  const GUNLER = [
+    { gun: t('day_today'),    tarih: '7 Haz', uygun: true  },
+    { gun: t('day_tomorrow'), tarih: '8 Haz', uygun: true  },
+    { gun: t('day_sun'),      tarih: '9 Haz', uygun: true  },
+    { gun: t('day_mon'),      tarih: '10 Haz', uygun: false },
+    { gun: t('day_tue'),      tarih: '11 Haz', uygun: true  },
+    { gun: t('day_wed'),      tarih: '12 Haz', uygun: true  },
+    { gun: t('day_thu'),      tarih: '13 Haz', uygun: true  },
+  ];
 
   if (onaylandi) {
     return (
@@ -49,7 +51,7 @@ export default function RandevuScreen() {
           <View style={styles.basariIcon}>
             <Ionicons name="checkmark" size={48} color={Colors.gold} />
           </View>
-          <Text style={styles.basariBaslik}>Randevu Onaylandı!</Text>
+          <Text style={[styles.basariBaslik, isRTL && { textAlign: 'center' }]}>{t('booking_success')}</Text>
           <Text style={styles.basariAlt}>
             {berber.dukkAn} — {hizmet}{'\n'}
             {GUNLER[seciliGun].gun} {GUNLER[seciliGun].tarih} saat {seciliSaat}
@@ -59,10 +61,10 @@ export default function RandevuScreen() {
             style={styles.anaGitBtn}
             onPress={() => router.push('/(tabs)/randevularim')}
           >
-            <Text style={styles.anaGitText}>Randevularımı Gör</Text>
+            <Text style={styles.anaGitText}>{t('booking_view_apts')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/')} style={{ marginTop: 12 }}>
-            <Text style={{ color: Colors.gray, fontSize: 14 }}>Ana Sayfaya Dön</Text>
+            <Text style={{ color: Colors.gray, fontSize: 14 }}>{t('booking_back_home')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -76,7 +78,7 @@ export default function RandevuScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={Colors.white} />
           </TouchableOpacity>
-          <Text style={styles.baslik}>Randevu Al</Text>
+          <Text style={styles.baslik}>{t('booking_title')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </SafeAreaView>
@@ -99,7 +101,7 @@ export default function RandevuScreen() {
         </View>
 
         {/* Gün Seç */}
-        <Text style={styles.bolumBaslik}>📅 Gün Seç</Text>
+        <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('booking_pick_day')}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -122,13 +124,13 @@ export default function RandevuScreen() {
               <Text style={[styles.gunTarih, seciliGun === i && styles.gunTarihSec, !g.uygun && { color: Colors.grayDark }]}>
                 {g.tarih}
               </Text>
-              {!g.uygun && <Text style={styles.kapaliText}>Kapalı</Text>}
+              {!g.uygun && <Text style={styles.kapaliText}>{t('booking_closed')}</Text>}
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {/* Saat Seç */}
-        <Text style={styles.bolumBaslik}>🕐 Saat Seç</Text>
+        <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('booking_pick_time')}</Text>
         <View style={styles.saatlerGrid}>
           {SAATLER.map((s) => {
             const dolu = DOLU_SAATLER.includes(s);
@@ -152,7 +154,7 @@ export default function RandevuScreen() {
                 >
                   {s}
                 </Text>
-                {dolu && <Text style={styles.doluText}>Dolu</Text>}
+                {dolu && <Text style={styles.doluText}>{t('booking_busy')}</Text>}
               </TouchableOpacity>
             );
           })}
@@ -161,8 +163,8 @@ export default function RandevuScreen() {
         {/* Not */}
         <View style={styles.bilgiKutu}>
           <Ionicons name="information-circle-outline" size={16} color={Colors.gold} />
-          <Text style={styles.bilgiText}>
-            Randevu onayı SMS ile gönderilecek. Geç kalırsanız 15 dk içinde bildirim yapın.
+          <Text style={[styles.bilgiText, isRTL && { textAlign: 'right' }]}>
+            {t('booking_sms_info')}
           </Text>
         </View>
       </ScrollView>
@@ -173,7 +175,7 @@ export default function RandevuScreen() {
           <Text style={styles.altLabel}>
             {seciliSaat
               ? `${GUNLER[seciliGun].gun} ${GUNLER[seciliGun].tarih} — ${seciliSaat}`
-              : 'Saat seçin'}
+              : t('booking_time_hint')}
           </Text>
           <Text style={styles.altFiyat}>₺{fiyat}</Text>
         </View>
@@ -183,7 +185,7 @@ export default function RandevuScreen() {
           disabled={!seciliSaat}
         >
           <Ionicons name="checkmark-circle" size={20} color="#0A0A0A" />
-          <Text style={styles.onaylaBtnText}>Onayla</Text>
+          <Text style={styles.onaylaBtnText}>{t('booking_confirm')}</Text>
         </TouchableOpacity>
       </View>
     </View>

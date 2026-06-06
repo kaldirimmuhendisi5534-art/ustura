@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { View, StyleSheet, Platform } from 'react-native';
+import { useLang } from '../../context/LanguageContext';
 
 function TabIcon({ name, color, focused }) {
   return (
@@ -25,6 +26,8 @@ const styles = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  const { t } = useLang();
+
   return (
     <Tabs
       screenOptions={{
@@ -52,7 +55,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Keşfet',
+          title: t('tab_explore'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name={focused ? 'compass' : 'compass-outline'} color={color} focused={focused} />
           ),
@@ -61,7 +64,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="harita"
         options={{
-          title: 'Harita',
+          title: t('tab_map'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name={focused ? 'map' : 'map-outline'} color={color} focused={focused} />
           ),
@@ -70,7 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="randevularim"
         options={{
-          title: 'Randevular',
+          title: t('tab_appointments'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} color={color} focused={focused} />
           ),
@@ -86,7 +89,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profil"
         options={{
-          title: 'Profil',
+          title: t('tab_profile'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name={focused ? 'person' : 'person-outline'} color={color} focused={focused} />
           ),

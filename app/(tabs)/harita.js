@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { BERBERLER } from '../../constants/mockData';
+import { useLang } from '../../context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const PIN_POSITIONS = [
 
 export default function HaritaScreen() {
   const router = useRouter();
+  const { t, isRTL } = useLang();
   const [seciliBerber, setSeciliBerber] = useState(null);
 
   return (
@@ -63,7 +65,7 @@ export default function HaritaScreen() {
         <SafeAreaView edges={['top']} style={styles.ustBar}>
           <View style={styles.aramaKutu}>
             <Ionicons name="search" size={16} color={Colors.gray} />
-            <Text style={styles.aramaPlaceholder}>Semt veya berber ara...</Text>
+            <Text style={styles.aramaPlaceholder}>{t('map_search')}</Text>
           </View>
           <TouchableOpacity style={styles.filtreBtnMap}>
             <Ionicons name="options-outline" size={18} color={Colors.gold} />
@@ -109,8 +111,8 @@ export default function HaritaScreen() {
       {/* Alt liste */}
       <View style={styles.altListe}>
         <View style={styles.altBaslik}>
-          <Text style={styles.altBaslikText}>Yakınındaki Berberler</Text>
-          <Text style={styles.altAdet}>{BERBERLER.length} sonuç</Text>
+          <Text style={[styles.altBaslikText, isRTL && { textAlign: 'right' }]}>{t('map_nearby')}</Text>
+          <Text style={styles.altAdet}>{BERBERLER.length} {t('results')}</Text>
         </View>
         <ScrollView
           horizontal

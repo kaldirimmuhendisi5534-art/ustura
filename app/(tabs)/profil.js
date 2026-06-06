@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { KULLANICI, RANDEVULAR } from '../../constants/mockData';
+import { useLang } from '../../context/LanguageContext';
 
 const MENU_BOLUMLER = [
   {
@@ -51,6 +52,7 @@ const ROZETLER = [
 ];
 
 export default function ProfilScreen() {
+  const { t, isRTL } = useLang();
   const tamamlanan = RANDEVULAR.filter((r) => r.durum === 'tamamlandi').length;
 
   return (
@@ -77,7 +79,7 @@ export default function ProfilScreen() {
                 <Text style={styles.kullaniciAd}>{KULLANICI.ad}</Text>
                 <Text style={styles.kullaniciTel}>{KULLANICI.telefon}</Text>
                 <View style={styles.goldBadge}>
-                  <Text style={styles.goldBadgeText}>Gold Üye</Text>
+                  <Text style={styles.goldBadgeText}>{t('profile_gold')}</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.editBtn}>
@@ -89,13 +91,13 @@ export default function ProfilScreen() {
 
         {/* ── İSTATİSTİKLER ──────────────────────── */}
         <View style={styles.statsKart}>
-          <StatKutu deger={KULLANICI.kesimSayisi} label="Kesim" ikon="cut" />
+          <StatKutu deger={KULLANICI.kesimSayisi} label={t('profile_cuts')} ikon="cut" />
           <View style={styles.statDivider} />
-          <StatKutu deger={`₺${KULLANICI.harcama}`} label="Harcama" ikon="wallet" />
+          <StatKutu deger={`₺${KULLANICI.harcama}`} label={t('profile_spending')} ikon="wallet" />
           <View style={styles.statDivider} />
-          <StatKutu deger={KULLANICI.favoriSayi} label="Favori" ikon="heart" />
+          <StatKutu deger={KULLANICI.favoriSayi} label={t('profile_favorites')} ikon="heart" />
           <View style={styles.statDivider} />
-          <StatKutu deger={`${KULLANICI.puan}`} label="Puan" ikon="trophy" />
+          <StatKutu deger={`${KULLANICI.puan}`} label={t('profile_points')} ikon="trophy" />
         </View>
 
         {/* ── LOYALTY ────────────────────────────── */}
@@ -107,8 +109,10 @@ export default function ProfilScreen() {
               <Text style={styles.loyaltyLevelText}>GOLD</Text>
             </View>
           </View>
-          <Text style={styles.loyaltyDesc}>
-            Platinum'a yükselmek için <Text style={{ color: Colors.gold }}>760 puan</Text> gerekiyor
+          <Text style={[styles.loyaltyDesc, isRTL && { textAlign: 'right' }]}>
+            {t('loyalty_to_plat')}{' '}
+            <Text style={{ color: Colors.gold }}>760 {t('loyalty_points')}</Text>
+            {' '}{t('loyalty_pts_needed')}
           </Text>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: '62%' }]}>
@@ -179,7 +183,7 @@ export default function ProfilScreen() {
         ))}
 
         {/* App version */}
-        <Text style={styles.versiyon}>USTURA v1.0.0 · Made in Istanbul</Text>
+        <Text style={[styles.versiyon, isRTL && { textAlign: 'center' }]}>{t('app_version')}</Text>
 
         <View style={{ height: 100 }} />
       </ScrollView>

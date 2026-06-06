@@ -16,12 +16,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { BERBERLER } from '../../constants/mockData';
+import { useLang } from '../../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
 export default function BerberProfilScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { t, isRTL } = useLang();
   const berber = BERBERLER.find((b) => b.id === id) || BERBERLER[0];
   const [seciliHizmet, setSeciliHizmet] = useState(berber.hizmetler[0]);
 
@@ -79,9 +81,9 @@ export default function BerberProfilScreen() {
 
           {/* İstatistikler */}
           <View style={styles.statsRow}>
-            <StatKutu ikon="location-outline" deger={berber.mesafe} label="Uzaklık" />
-            <StatKutu ikon="time-outline" deger={`${berber.calismaSaatleri.acilis}-${berber.calismaSaatleri.kapanis}`} label="Çalışma" />
-            <StatKutu ikon="checkmark-circle-outline" deger={berber.yorumSayisi + '+'} label="Müşteri" />
+            <StatKutu ikon="location-outline" deger={berber.mesafe} label={t('detail_distance')} />
+            <StatKutu ikon="time-outline" deger={`${berber.calismaSaatleri.acilis}-${berber.calismaSaatleri.kapanis}`} label={t('detail_hours')} />
+            <StatKutu ikon="checkmark-circle-outline" deger={berber.yorumSayisi + '+'} label={t('detail_customers')} />
           </View>
 
           {/* Adres */}
@@ -96,7 +98,7 @@ export default function BerberProfilScreen() {
         </View>
 
         {/* Galeri */}
-        <Text style={styles.bolumBaslik}>📸 Galeri</Text>
+        <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('detail_gallery')}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -114,7 +116,7 @@ export default function BerberProfilScreen() {
         </ScrollView>
 
         {/* Hizmetler */}
-        <Text style={styles.bolumBaslik}>✂️ Hizmetler</Text>
+        <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('detail_services')}</Text>
         <View style={styles.hizmetlerListesi}>
           {berber.hizmetler.map((hizmet, i) => (
             <TouchableOpacity
@@ -141,7 +143,7 @@ export default function BerberProfilScreen() {
         </View>
 
         {/* Yorumlar */}
-        <Text style={styles.bolumBaslik}>💬 Yorumlar</Text>
+        <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('detail_reviews')}</Text>
         <View style={styles.yorumlarListesi}>
           {berber.yorumlar && berber.yorumlar.map((y, i) => (
             <View key={i} style={styles.yorumKart}>
@@ -171,7 +173,7 @@ export default function BerberProfilScreen() {
       {/* Alt Buton */}
       <View style={styles.altPanel}>
         <View style={styles.fiyatBilgi}>
-          <Text style={styles.altLabel}>Seçilen hizmet</Text>
+          <Text style={styles.altLabel}>{t('detail_selected')}</Text>
           <Text style={styles.altHizmetAd}>{seciliHizmet?.ad}</Text>
           <Text style={styles.altFiyat}>₺{seciliHizmet?.fiyat}</Text>
         </View>
@@ -180,7 +182,7 @@ export default function BerberProfilScreen() {
           onPress={() => router.push(`/randevu/${berber.id}?hizmet=${encodeURIComponent(seciliHizmet?.ad)}&fiyat=${seciliHizmet?.fiyat}`)}
         >
           <Ionicons name="calendar" size={20} color="#0A0A0A" />
-          <Text style={styles.randevuBtnText}>Randevu Al</Text>
+          <Text style={styles.randevuBtnText}>{t('detail_book')}</Text>
         </TouchableOpacity>
       </View>
     </View>
