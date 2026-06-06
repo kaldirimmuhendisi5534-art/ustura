@@ -39,11 +39,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Map U drive for MAX_PATH fix
+      - name: Create C-slash-u junction for short path
         shell: powershell
         run: |
-          subst U: "$env:GITHUB_WORKSPACE" 2>$null
-          Write-Host "U: mapped to $env:GITHUB_WORKSPACE"
+          if (Test-Path "C:\u") { cmd /c rmdir "C:\u" 2>$null }
+          cmd /c mklink /J C:\u "$env:GITHUB_WORKSPACE"
+          Write-Host "C:\u -> $env:GITHUB_WORKSPACE"
+          Write-Host "package.json exists: $(Test-Path 'C:\u\package.json')"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -52,12 +54,12 @@ jobs:
 
       - name: Install Dependencies
         shell: bash
-        run: cd /u && npm install --legacy-peer-deps
+        run: cd /c/u && npm install --legacy-peer-deps
 
       - name: Expo Prebuild
         shell: bash
         run: |
-          cd /u
+          cd /c/u
           npx expo prebuild --platform android --non-interactive --clean
 
       - name: Gradle Build
@@ -69,7 +71,7 @@ jobs:
           PROFILE="${{ github.event.inputs.profile }}"
           KEYSTORE_WIN=$(powershell.exe -Command "echo \$env:USERPROFILE" | tr -d '\r')
           KEYSTORE="$KEYSTORE_WIN/.android/debug.keystore"
-          cd /u/android
+          cd /c/u/android
           if [ "$PROFILE" = "production" ]; then
             ./gradlew bundleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
