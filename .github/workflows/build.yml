@@ -42,13 +42,18 @@ jobs:
       - name: Map U drive to workspace parent for short paths
         shell: powershell
         run: |
-          $parent = Split-Path "$env:GITHUB_WORKSPACE" -Parent
-          subst U: $parent 2>$null
-          $repoName = Split-Path "$env:GITHUB_WORKSPACE" -Leaf
-          Add-Content $env:GITHUB_ENV "REPO_NAME=$repoName"
-          Write-Host "U: = $parent"
-          Write-Host "Project at: U:\$repoName"
-          Write-Host "package.json: $(Test-Path "U:\$repoName\package.json")"
+          $ws     = $env:GITHUB_WORKSPACE
+          $parent = Split-Path $ws -Parent
+          $leaf   = Split-Path $ws -Leaf
+          subst U: /D 2>$null
+          subst U: $parent
+          if ($LASTEXITCODE -ne 0) { throw "subst failed: $LASTEXITCODE" }
+          $pkgPath = "U:\$leaf\package.json"
+          if (-not (Test-Path $pkgPath)) { throw "package.json not found at $pkgPath" }
+          Add-Content $env:GITHUB_ENV "REPO_NAME=$leaf"
+          Write-Host "U: -> $parent"
+          Write-Host "Project: U:\$leaf"
+          Write-Host "package.json OK: $pkgPath"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
