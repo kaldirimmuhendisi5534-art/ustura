@@ -126,7 +126,7 @@ function RandevuKart({ randevu, t, isRTL, router }) {
           <Text style={styles.kartHizmet}>{randevu.hizmet}</Text>
           <View style={[styles.kartMeta, isRTL && { flexDirection: 'row-reverse' }]}>
             <Ionicons name="calendar-outline" size={12} color={Colors.gray} />
-            <Text style={styles.kartMetaText}>{randevu.tarih} · {randevu.saat}</Text>
+            <Text style={styles.kartMetaText}>{randevu.gun} · {randevu.saat}</Text>
           </View>
           <View style={[styles.kartMeta, isRTL && { flexDirection: 'row-reverse' }]}>
             <Ionicons name="location-outline" size={12} color={Colors.gray} />
