@@ -1,11 +1,10 @@
 name: Ustura Android Build
-# v2
 
 on:
   workflow_dispatch:
     inputs:
       profile:
-        description: 'Build profili'
+        description: 'Build profili (preview=APK, production=AAB)'
         required: true
         default: 'preview'
         type: choice
@@ -18,11 +17,11 @@ permissions:
 
 jobs:
   build:
-    name: Android APK (${{ github.event.inputs.profile || 'preview' }})
+    name: Android Build
     runs-on: self-hosted
 
     steps:
-      - name: 🔧 Java + Android PATH
+      - name: Setup Java and Android PATH
         shell: powershell
         run: |
           Add-Content $env:GITHUB_PATH "C:\Program Files\Git\bin"
@@ -34,94 +33,67 @@ jobs:
           Add-Content $env:GITHUB_PATH "$javaHome\bin"
           Add-Content $env:GITHUB_PATH "$androidHome\platform-tools"
           Add-Content $env:GITHUB_PATH "$androidHome\cmdline-tools\latest\bin"
-          Write-Host "JAVA_HOME = $javaHome"
-          Write-Host "ANDROID_HOME = $androidHome"
+          Write-Host "JAVA_HOME=$javaHome"
+          Write-Host "ANDROID_HOME=$androidHome"
 
-      - name: 📂 Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔗 U: sürücüsü — MAX_PATH fix
+      - name: Map U drive for MAX_PATH fix
         shell: powershell
         run: |
-          $target = "$env:GITHUB_WORKSPACE"
-          subst U: $target 2>$null
-          Write-Host "U: = $target"
-          Add-Content $env:GITHUB_ENV "US_ROOT=U:"
+          subst U: "$env:GITHUB_WORKSPACE" 2>$null
+          Write-Host "U: mapped to $env:GITHUB_WORKSPACE"
 
-      - name: 🟢 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 📦 npm install (U: üzerinden)
+      - name: Install Dependencies
         shell: bash
-        run: |
-          cd /u
-          npm install --legacy-peer-deps
+        run: cd /u && npm install --legacy-peer-deps
 
-      - name: 🏗️ Expo Prebuild (U: üzerinden)
+      - name: Expo Prebuild
         shell: bash
         run: |
           cd /u
           npx expo prebuild --platform android --non-interactive --clean
-          echo "Prebuild OK"
-          ls android/app/
 
-      - name: 🔨 Gradle Build
+      - name: Gradle Build
         shell: bash
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
         run: |
-          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
+          PROFILE="${{ github.event.inputs.profile }}"
           KEYSTORE_WIN=$(powershell.exe -Command "echo \$env:USERPROFILE" | tr -d '\r')
           KEYSTORE="$KEYSTORE_WIN/.android/debug.keystore"
-
           cd /u/android
-
           if [ "$PROFILE" = "production" ]; then
             ./gradlew bundleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
               -Pandroid.injected.signing.store.password=android \
               -Pandroid.injected.signing.key.alias=androiddebugkey \
               -Pandroid.injected.signing.key.password=android
-            cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/ustura-release.aab"
-            echo "BUILD_FILE=ustura-release.aab" >> $GITHUB_ENV
+            cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/ustura.aab"
           else
             ./gradlew assembleRelease --no-daemon \
               -Pandroid.injected.signing.store.file="$KEYSTORE" \
               -Pandroid.injected.signing.store.password=android \
               -Pandroid.injected.signing.key.alias=androiddebugkey \
               -Pandroid.injected.signing.key.password=android
-            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/ustura-release.apk"
-            echo "BUILD_FILE=ustura-release.apk" >> $GITHUB_ENV
+            cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/ustura.apk"
           fi
+          ls -lh "$GITHUB_WORKSPACE/ustura"*
 
-          ls -lh "$GITHUB_WORKSPACE/ustura-release."*
-
-      - name: 🚀 GitHub Release
+      - name: Create GitHub Release
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
-          TAG="v1.0.0-build${{ github.run_number }}"
-          SHORT="${{ github.sha }}"
-          SHORT="${SHORT:0:7}"
-
-          gh release create "$TAG" ustura-release.* \
-            --title "💈 Ustura Build #${{ github.run_number }} • ${PROFILE} • ${SHORT}" \
-            --notes "## 💈 Ustura APK
-
-          **Branch:** \`${{ github.ref_name }}\`
-          **Commit:** \`${{ github.sha }}\`
-          **Profile:** ${PROFILE}
-
-          > APK'yı indirmek için Assets bölümünü kullanın." \
+          TAG="build-${{ github.run_number }}"
+          gh release create "$TAG" "$GITHUB_WORKSPACE"/ustura* \
+            --title "Ustura Build ${{ github.run_number }}" \
+            --notes "Ustura APK - Build ${{ github.run_number }} - Branch ${{ github.ref_name }}" \
             --prerelease
-
-      - name: ✅ Özet
-        if: success()
-        run: |
-          echo "## ✅ Ustura Build #${{ github.run_number }} Tamamlandı" >> $GITHUB_STEP_SUMMARY
-          echo "📦 APK Releases'dan indir" >> $GITHUB_STEP_SUMMARY
