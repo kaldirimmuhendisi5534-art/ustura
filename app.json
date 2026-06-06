@@ -26,11 +26,6 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "extra": {
-      "eas": {
-        "projectId": "ustura-app"
-      }
-    },
     "plugins": [
       "expo-router",
       [

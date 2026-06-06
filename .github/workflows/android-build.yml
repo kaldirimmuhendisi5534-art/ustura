@@ -60,8 +60,6 @@ jobs:
 
       - name: 🏗️ Expo Prebuild (U: üzerinden)
         shell: bash
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           cd /u
           npx expo prebuild --platform android --non-interactive --clean
