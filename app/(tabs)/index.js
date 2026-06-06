@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, TextInput, Dimensions, Animated,
+  StyleSheet, TextInput, Dimensions, Animated, Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -201,7 +201,7 @@ export default function HomeScreen() {
               snapToInterval={width * 0.78 + 12}
             >
               {PROMOSYONLAR.map((p) => (
-                <TouchableOpacity key={p.id} activeOpacity={0.85}>
+                <TouchableOpacity key={p.id} activeOpacity={0.85} onPress={() => Alert.alert(p.baslik, `${p.altBaslik}\n${p.aciklama}`)}>
                   <LinearGradient
                     colors={p.renk}
                     start={{ x: 0, y: 0 }}

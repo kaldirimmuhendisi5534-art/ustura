@@ -1,11 +1,12 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking, Share,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { KULLANICI, RANDEVULAR } from '../../constants/mockData';
 import { useLang } from '../../context/LanguageContext';
@@ -53,7 +54,25 @@ const ROZETLER = [
 
 export default function ProfilScreen() {
   const { t, isRTL } = useLang();
+  const router = useRouter();
   const tamamlanan = RANDEVULAR.filter((r) => r.durum === 'tamamlandi').length;
+
+  const menuAksiyon = (label) => {
+    if (label === 'Çıkış Yap') {
+      Alert.alert('Çıkış Yap', 'Hesabınızdan çıkış yapmak istediğinize emin misiniz?', [
+        { text: 'Vazgeç', style: 'cancel' },
+        { text: 'Çık', style: 'destructive', onPress: () => Alert.alert('✓', 'Çıkış yapıldı.') },
+      ]);
+    } else if (label === 'Favori Berberlerim') {
+      router.push('/');
+    } else if (label === 'Uygulamayı Puanla') {
+      Linking.openURL('https://play.google.com/store/apps');
+    } else if (label === 'Bize Yazın') {
+      Linking.openURL('mailto:destek@ustura.app?subject=Destek');
+    } else {
+      Alert.alert(label, 'Bu özellik yakında kullanıma açılacak.');
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -82,7 +101,7 @@ export default function ProfilScreen() {
                   <Text style={styles.goldBadgeText}>{t('profile_gold')}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.editBtn}>
+              <TouchableOpacity style={styles.editBtn} onPress={() => Alert.alert('Profil Düzenle', 'Bu özellik yakında kullanıma açılacak.')}>
                 <Ionicons name="create-outline" size={18} color={Colors.gold} />
               </TouchableOpacity>
             </View>
@@ -155,6 +174,7 @@ export default function ProfilScreen() {
                     ii < bolum.items.length - 1 && styles.menuItemBorder,
                   ]}
                   activeOpacity={0.7}
+                  onPress={() => menuAksiyon(item.label)}
                 >
                   <View style={[styles.menuIkon, item.tehlikeli && { backgroundColor: 'rgba(229,62,62,0.1)' }]}>
                     <Ionicons

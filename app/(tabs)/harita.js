@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Dimensions,
+  ScrollView, Dimensions, Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -79,32 +79,46 @@ export default function HaritaScreen() {
 
         {/* Seçili berber popup */}
         {seciliBerber && (
-          <TouchableOpacity
-            style={styles.popupKart}
-            onPress={() => router.push(`/berber/${seciliBerber.id}`)}
-            activeOpacity={0.92}
-          >
-            <Image
-              source={{ uri: seciliBerber.kapakFoto }}
-              style={styles.popupFoto}
-              contentFit="cover"
-            />
-            <View style={styles.popupBilgi}>
-              <Text style={styles.popupAd} numberOfLines={1}>{seciliBerber.dukkAn}</Text>
-              <View style={styles.popupMeta}>
-                <Ionicons name="location-outline" size={12} color={Colors.gold} />
-                <Text style={styles.popupMetaText}>{seciliBerber.ilce} · {seciliBerber.mesafe}</Text>
-              </View>
-              <View style={styles.popupAlt}>
-                <View style={styles.puanRow}>
-                  <Ionicons name="star" size={12} color={Colors.gold} />
-                  <Text style={styles.puanText}>{seciliBerber.puan}</Text>
+          <View style={styles.popupKart}>
+            <TouchableOpacity
+              style={styles.popupIceri}
+              onPress={() => router.push(`/berber/${seciliBerber.id}`)}
+              activeOpacity={0.92}
+            >
+              <Image
+                source={{ uri: seciliBerber.kapakFoto }}
+                style={styles.popupFoto}
+                contentFit="cover"
+              />
+              <View style={styles.popupBilgi}>
+                <Text style={styles.popupAd} numberOfLines={1}>{seciliBerber.dukkAn}</Text>
+                <View style={styles.popupMeta}>
+                  <Ionicons name="location-outline" size={12} color={Colors.gold} />
+                  <Text style={styles.popupMetaText}>{seciliBerber.ilce} · {seciliBerber.mesafe}</Text>
                 </View>
-                <Text style={styles.popupFiyat}>₺{seciliBerber.hizmetler[0].fiyat}'den</Text>
+                <View style={styles.popupAlt}>
+                  <View style={styles.puanRow}>
+                    <Ionicons name="star" size={12} color={Colors.gold} />
+                    <Text style={styles.puanText}>{seciliBerber.puan}</Text>
+                  </View>
+                  <Text style={styles.popupFiyat}>₺{seciliBerber.hizmetler[0].fiyat}'den</Text>
+                </View>
               </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={Colors.gray} />
-          </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={18} color={Colors.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.hrtaBtn}
+              onPress={() => {
+                const { lat, lng } = seciliBerber.konum || {};
+                if (lat && lng) {
+                  Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+                }
+              }}
+            >
+              <Ionicons name="navigate" size={14} color="#0A0A0A" />
+              <Text style={styles.hrtaBtnText}>{t('apt_directions')}</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -252,15 +266,27 @@ const styles = StyleSheet.create({
     bottom: 170,
     left: 16,
     right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: 'rgba(20,20,20,0.96)',
     borderRadius: 18,
-    padding: 12,
-    gap: 12,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.gold,
   },
+  popupIceri: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+  },
+  hrtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.gold,
+    paddingVertical: 10,
+  },
+  hrtaBtnText: { fontSize: 13, fontWeight: '800', color: '#0A0A0A' },
   popupFoto: { width: 56, height: 56, borderRadius: 12 },
   popupBilgi: { flex: 1 },
   popupAd: { fontSize: 14, fontWeight: '700', color: Colors.white, marginBottom: 3 },

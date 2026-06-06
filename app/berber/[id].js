@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  FlatList,
   Linking,
+  Share,
+  Modal,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +20,7 @@ import { Colors } from '../../constants/colors';
 import { BERBERLER } from '../../constants/mockData';
 import { useLang } from '../../context/LanguageContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function BerberProfilScreen() {
   const { id } = useLocalSearchParams();
@@ -26,6 +28,25 @@ export default function BerberProfilScreen() {
   const { t, isRTL } = useLang();
   const berber = BERBERLER.find((b) => b.id === id) || BERBERLER[0];
   const [seciliHizmet, setSeciliHizmet] = useState(berber.hizmetler[0]);
+  const [galeriIndex, setGaleriIndex] = useState(null);
+
+  const handleAdres = () => {
+    const { lat, lng } = berber.konum || {};
+    if (lat && lng) {
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+    } else {
+      Linking.openURL(`https://www.google.com/maps/search/${encodeURIComponent(berber.adres)}`);
+    }
+  };
+
+  const handlePaylasim = async () => {
+    try {
+      await Share.share({
+        message: `${berber.dukkAn} — ${berber.ilce}\n⭐ ${berber.puan} · ${berber.mesafe}\n\nUSSTURA uygulamasından`,
+        title: berber.dukkAn,
+      });
+    } catch (e) {}
+  };
 
   return (
     <View style={styles.container}>
@@ -47,7 +68,7 @@ export default function BerberProfilScreen() {
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
               <Ionicons name="arrow-back" size={22} color={Colors.white} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.shareBtn}>
+            <TouchableOpacity style={styles.shareBtn} onPress={handlePaylasim}>
               <Ionicons name="share-outline" size={22} color={Colors.white} />
             </TouchableOpacity>
           </SafeAreaView>
@@ -87,7 +108,7 @@ export default function BerberProfilScreen() {
           </View>
 
           {/* Adres */}
-          <TouchableOpacity style={styles.adresKutu}>
+          <TouchableOpacity style={styles.adresKutu} onPress={handleAdres}>
             <Ionicons name="map-outline" size={18} color={Colors.gold} />
             <Text style={styles.adresText}>{berber.adres}</Text>
             <Ionicons name="chevron-forward" size={16} color={Colors.gray} />
@@ -105,15 +126,35 @@ export default function BerberProfilScreen() {
           contentContainerStyle={styles.galeriRow}
         >
           {berber.galeri.map((uri, i) => (
-            <Image
-              key={i}
-              source={{ uri }}
-              style={styles.galeriItem}
-              contentFit="cover"
-              transition={200}
-            />
+            <TouchableOpacity key={i} onPress={() => setGaleriIndex(i)} activeOpacity={0.9}>
+              <Image
+                source={{ uri }}
+                style={styles.galeriItem}
+                contentFit="cover"
+                transition={200}
+              />
+            </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Galeri Tam Ekran Modal */}
+        <Modal visible={galeriIndex !== null} transparent animationType="fade" onRequestClose={() => setGaleriIndex(null)}>
+          <View style={styles.galeriModal}>
+            <TouchableOpacity style={styles.galeriModalKapat} onPress={() => setGaleriIndex(null)}>
+              <Ionicons name="close" size={28} color={Colors.white} />
+            </TouchableOpacity>
+            {galeriIndex !== null && (
+              <Image source={{ uri: berber.galeri[galeriIndex] }} style={styles.galeriTamEkran} contentFit="contain" />
+            )}
+            <View style={styles.galeriDots}>
+              {berber.galeri.map((_, i) => (
+                <TouchableOpacity key={i} onPress={() => setGaleriIndex(i)}>
+                  <View style={[styles.galeriDot, i === galeriIndex && styles.galeriDotAktif]} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </Modal>
 
         {/* Hizmetler */}
         <Text style={[styles.bolumBaslik, isRTL && { textAlign: 'right' }]}>{t('detail_services')}</Text>
@@ -283,6 +324,12 @@ const styles = StyleSheet.create({
   },
   galeriRow: { paddingHorizontal: 20, gap: 10 },
   galeriItem: { width: 140, height: 140, borderRadius: 14 },
+  galeriModal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  galeriModalKapat: { position: 'absolute', top: 50, right: 20, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8 },
+  galeriTamEkran: { width, height: height * 0.75 },
+  galeriDots: { flexDirection: 'row', gap: 8, position: 'absolute', bottom: 60 },
+  galeriDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.3)' },
+  galeriDotAktif: { backgroundColor: Colors.gold, width: 24 },
   yorumlarListesi: { marginHorizontal: 20, gap: 10 },
   yorumKart: {
     backgroundColor: Colors.card, borderRadius: 16, padding: 14,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -90,6 +90,31 @@ export default function RandevularimScreen() {
 
 function RandevuKart({ randevu, t, isRTL, router }) {
   const cfg = STATUS_CONFIG[randevu.durum] || STATUS_CONFIG.bekliyor;
+
+  const handleIptal = () => {
+    Alert.alert(
+      t('apt_cancel'),
+      `${randevu.berber.dukkAn} — ${randevu.hizmet}\n${randevu.gun} ${randevu.saat}`,
+      [
+        { text: t('apt_cancel_no') ?? 'Vazgeç', style: 'cancel' },
+        {
+          text: t('apt_cancel_yes') ?? 'İptal Et',
+          style: 'destructive',
+          onPress: () => Alert.alert('✓', t('apt_cancel_ok') ?? 'Randevu iptal edildi.'),
+        },
+      ]
+    );
+  };
+
+  const handleYolTarifi = () => {
+    const { lat, lng } = randevu.berber.konum || {};
+    if (lat && lng) {
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+    } else {
+      Linking.openURL(`https://www.google.com/maps/search/${encodeURIComponent(randevu.berber.adres)}`);
+    }
+  };
+
   return (
     <View style={styles.kart}>
       <View style={[styles.kartUst, isRTL && { flexDirection: 'row-reverse' }]}>
@@ -121,12 +146,12 @@ function RandevuKart({ randevu, t, isRTL, router }) {
 
       <View style={[styles.aksiyonRow, isRTL && { flexDirection: 'row-reverse' }]}>
         {randevu.durum !== 'tamamlandi' && (
-          <TouchableOpacity style={styles.iptBtn}>
+          <TouchableOpacity style={styles.iptBtn} onPress={handleIptal}>
             <Ionicons name="close-outline" size={16} color={Colors.red} />
             <Text style={styles.iptText}>{t('apt_cancel')}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.yolBtn}>
+        <TouchableOpacity style={styles.yolBtn} onPress={handleYolTarifi}>
           <Ionicons name="navigate-outline" size={16} color={Colors.gold} />
           <Text style={styles.yolText}>{t('apt_directions')}</Text>
         </TouchableOpacity>
