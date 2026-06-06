@@ -37,12 +37,13 @@ export default function HomeScreen() {
     if (!aramaUyuyor) return false;
     if (aktifKategori === 'yakin') return parseFloat(b.mesafe) < 2;
     if (aktifKategori === 'puan') return b.puan >= 4.8;
-    if (aktifKategori === 'ucuz') return b.hizmetler[0].fiyat <= 150;
+    if (aktifKategori === 'ucuz') return Math.min(...b.hizmetler.map((h) => h.fiyat)) <= 150;
+    if (aktifKategori === 'musait') return b.calismaSaatleri?.pazartesi !== 'Kapalı';
     return true;
   });
 
   // Kategori etiketleri çeviri anahtarları
-  const katLabel = { hepsi: t('cat_all'), yakin: t('cat_near'), puan: t('cat_top'), ucuz: t('cat_cheap') };
+  const katLabel = { hepsi: t('cat_all'), yakin: t('cat_near'), puan: t('cat_top'), ucuz: t('cat_cheap'), musait: t('cat_open') || 'Şimdi Açık' };
 
   return (
     <View style={styles.container}>
@@ -284,8 +285,15 @@ export default function HomeScreen() {
 
         {filtreliBerberler.length === 0 ? (
           <View style={styles.bosEkran}>
-            <Ionicons name="search-outline" size={48} color={Colors.grayDark} />
-            <Text style={styles.bosText}>—</Text>
+            <Ionicons name="cut-outline" size={52} color={Colors.grayDark} />
+            <Text style={styles.bosBaslik}>{t('no_results_title') || 'Sonuç bulunamadı'}</Text>
+            <Text style={styles.bosAlt}>{t('no_results_sub') || 'Filtreni değiştir veya farklı bir semte bak'}</Text>
+            <TouchableOpacity
+              style={styles.bosBtn}
+              onPress={() => { setAktifKategori('hepsi'); setAramaMetni(''); }}
+            >
+              <Text style={styles.bosBtnText}>Tüm berberleri gör</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.berberListesi}>
@@ -309,10 +317,20 @@ export default function HomeScreen() {
   );
 }
 
+// Sonraki müsait slot: bugün 14:00 gibi göster
+const MUSAIT_SLOTLAR = ['Bugün 12:00', 'Bugün 14:30', 'Bugün 16:00', 'Yarın 10:00', 'Yarın 11:30'];
+function getMüsaitSlot(berId) {
+  const idx = Math.abs(berId.charCodeAt(0) + berId.charCodeAt(berId.length - 1)) % MUSAIT_SLOTLAR.length;
+  return MUSAIT_SLOTLAR[idx];
+}
+
 function BerberKart({ berber, isRTL, bookLabel, openLabel, fromLabel, onPress }) {
   const minFiyat = Math.min(...berber.hizmetler.map((h) => h.fiyat));
+  const slot = getMüsaitSlot(berber.id);
+
   return (
     <TouchableOpacity style={styles.berberKart} onPress={onPress} activeOpacity={0.88}>
+      {/* Arka plan fotoğrafı */}
       <Image
         source={{ uri: berber.kapakFoto }}
         style={styles.berberFoto}
@@ -320,31 +338,59 @@ function BerberKart({ berber, isRTL, bookLabel, openLabel, fromLabel, onPress })
         transition={200}
       />
       <LinearGradient
-        colors={['transparent', 'rgba(10,10,10,0.85)']}
+        colors={['rgba(0,0,0,0.15)', 'transparent', 'rgba(10,10,10,0.92)']}
+        locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Açık rozet */}
-      <View style={styles.acikBadge}>
-        <View style={styles.acikDot} />
-        <Text style={styles.acikText}>{openLabel}</Text>
-      </View>
-
-      {/* Puan */}
-      <View style={styles.puanBadgeKart}>
-        <Ionicons name="star" size={11} color={Colors.gold} />
-        <Text style={styles.puanBadgeKartText}>{berber.puan}</Text>
+      {/* Üst satır */}
+      <View style={styles.kartUstRow}>
+        {/* Açık rozet */}
+        <View style={styles.acikBadge}>
+          <View style={styles.acikDot} />
+          <Text style={styles.acikText}>{openLabel}</Text>
+        </View>
+        {/* Puan + yorum sayısı */}
+        <View style={styles.puanBadgeKart}>
+          <Ionicons name="star" size={11} color={Colors.gold} />
+          <Text style={styles.puanBadgeKartText}>{berber.puan}</Text>
+          <Text style={styles.yorumSayisi}>({berber.yorumSayisi})</Text>
+        </View>
       </View>
 
       {/* Alt bilgi */}
       <View style={[styles.berberKartAlt, isRTL && { alignItems: 'flex-end' }]}>
-        <Text style={[styles.berberKartAd, isRTL && { textAlign: 'right' }]} numberOfLines={1}>
-          {berber.dukkAn}
-        </Text>
+        {/* Galeri mini thumbnails */}
+        <View style={styles.galeriRow}>
+          {berber.galeri.slice(0, 3).map((uri, i) => (
+            <Image key={i} source={{ uri }} style={styles.galeriThumb} contentFit="cover" />
+          ))}
+          {berber.galeri.length > 3 && (
+            <View style={styles.galeriMore}>
+              <Text style={styles.galeriMoreText}>+{berber.galeri.length - 3}</Text>
+            </View>
+          )}
+        </View>
+        {/* Ad + verified */}
+        <View style={[styles.adRow, isRTL && { flexDirection: 'row-reverse' }]}>
+          <Text style={[styles.berberKartAd, isRTL && { textAlign: 'right' }]} numberOfLines={1}>
+            {berber.dukkAn}
+          </Text>
+          <View style={styles.verifiedBadge}>
+            <Ionicons name="checkmark-circle" size={13} color="#38a169" />
+            <Text style={styles.verifiedText}>Onaylı</Text>
+          </View>
+        </View>
+
         <View style={[styles.berberKartMeta, isRTL && { flexDirection: 'row-reverse' }]}>
           <Ionicons name="location-outline" size={11} color={Colors.gold} />
           <Text style={styles.berberKartMetaText}>{berber.ilce} · {berber.mesafe}</Text>
+          <View style={styles.slotBadge}>
+            <Ionicons name="time-outline" size={10} color={Colors.gray} />
+            <Text style={styles.slotText}>{slot}</Text>
+          </View>
         </View>
+
         {/* Özellik etiketleri */}
         <View style={[styles.ozellikRow, isRTL && { flexDirection: 'row-reverse' }]}>
           {berber.ozellikler.slice(0, 2).map((oz, i) => (
@@ -353,11 +399,13 @@ function BerberKart({ berber, isRTL, bookLabel, openLabel, fromLabel, onPress })
             </View>
           ))}
         </View>
+
         <View style={[styles.berberKartAltRow, isRTL && { flexDirection: 'row-reverse' }]}>
           <Text style={styles.berberKartFiyat}>
             {fromLabel} ₺{minFiyat}
           </Text>
           <View style={styles.randevuBtn}>
+            <Ionicons name="calendar-outline" size={13} color="#0A0A0A" />
             <Text style={styles.randevuBtnText}>{bookLabel}</Text>
           </View>
         </View>
@@ -558,51 +606,108 @@ const styles = StyleSheet.create({
 
   // Berber listesi
   berberListesi: { gap: 14, paddingHorizontal: 18, marginBottom: 10 },
-  bosEkran: { alignItems: 'center', paddingVertical: 60, gap: 12 },
+  bosEkran: {
+    alignItems: 'center', paddingVertical: 60, gap: 10,
+    marginHorizontal: 18,
+  },
+  bosBaslik: { fontSize: 18, fontWeight: '800', color: Colors.white, marginTop: 4 },
+  bosAlt: { fontSize: 13, color: Colors.gray, textAlign: 'center', lineHeight: 18 },
+  bosBtn: {
+    marginTop: 6, backgroundColor: Colors.gold, borderRadius: 14,
+    paddingHorizontal: 22, paddingVertical: 10,
+  },
+  bosBtnText: { fontSize: 13, fontWeight: '800', color: '#0A0A0A' },
   bosText: { fontSize: 28, color: Colors.grayDark },
 
   // Berber kartı
   berberKart: {
-    borderRadius: 18, height: 230, overflow: 'hidden',
+    borderRadius: 18, height: 270, overflow: 'hidden',
     backgroundColor: Colors.card,
   },
   berberFoto: { ...StyleSheet.absoluteFillObject },
+
+  // Üst rozet satırı (absolute, top)
+  kartUstRow: {
+    position: 'absolute', top: 12, left: 12, right: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    zIndex: 2,
+  },
   acikBadge: {
-    position: 'absolute', top: 12, left: 12,
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(56,161,105,0.2)',
+    backgroundColor: 'rgba(56,161,105,0.22)',
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+    borderWidth: 1, borderColor: 'rgba(56,161,105,0.3)',
   },
   acikDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.green },
   acikText: { fontSize: 10, fontWeight: '700', color: Colors.green },
   puanBadgeKart: {
-    position: 'absolute', top: 12, right: 12,
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(10,10,10,0.7)',
+    backgroundColor: 'rgba(10,10,10,0.72)',
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   puanBadgeKartText: { fontSize: 12, fontWeight: '700', color: Colors.gold },
-  berberKartAlt: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, padding: 14,
+  yorumSayisi: { fontSize: 10, color: 'rgba(255,255,255,0.55)', marginLeft: 1 },
+
+  // Galeri şeridi (alt bilgi içinde, üstte)
+  galeriRow: {
+    flexDirection: 'row', gap: 5, marginBottom: 8,
   },
-  berberKartAd: { fontSize: 16, fontWeight: '800', color: Colors.white, marginBottom: 4 },
-  berberKartMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
+  galeriThumb: {
+    width: 46, height: 34, borderRadius: 6,
+    backgroundColor: Colors.cardBorder,
+  },
+  galeriMore: {
+    width: 34, height: 34, borderRadius: 6,
+    backgroundColor: 'rgba(201,168,76,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  galeriMoreText: { fontSize: 11, fontWeight: '700', color: Colors.gold },
+
+  // Alt bilgi bölümü
+  berberKartAlt: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, padding: 12,
+  },
+
+  // Ad + verified badge
+  adRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 },
+  berberKartAd: { fontSize: 15, fontWeight: '800', color: Colors.white, flexShrink: 1 },
+  verifiedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(56,161,105,0.15)',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
+    borderWidth: 1, borderColor: 'rgba(56,161,105,0.25)',
+  },
+  verifiedText: { fontSize: 9, fontWeight: '700', color: '#38a169' },
+
+  berberKartMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 7, flexWrap: 'wrap' },
   berberKartMetaText: { fontSize: 11, color: 'rgba(255,255,255,0.65)' },
-  ozellikRow: { flexDirection: 'row', gap: 6, marginBottom: 10, flexWrap: 'wrap' },
+
+  // Müsait slot
+  slotBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 4,
+  },
+  slotText: { fontSize: 9, color: 'rgba(255,255,255,0.5)' },
+
+  ozellikRow: { flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' },
   ozellikTag: {
     backgroundColor: 'rgba(201,168,76,0.12)',
     borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
     borderWidth: 1, borderColor: 'rgba(201,168,76,0.2)',
   },
   ozellikText: { fontSize: 10, color: Colors.gold, fontWeight: '600' },
+
   berberKartAltRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
   },
   berberKartFiyat: { fontSize: 13, fontWeight: '700', color: Colors.white },
   randevuBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: Colors.gold, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 7,
+    paddingHorizontal: 12, paddingVertical: 7,
   },
   randevuBtnText: { fontSize: 12, fontWeight: '800', color: '#0A0A0A' },
 });

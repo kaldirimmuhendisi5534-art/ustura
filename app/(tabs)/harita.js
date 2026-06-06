@@ -28,6 +28,7 @@ export default function HaritaScreen() {
   const router = useRouter();
   const { t, isRTL } = useLang();
   const [seciliBerber, setSeciliBerber] = useState(null);
+  const [goruntuleme, setGoruntuleme] = useState('harita'); // 'harita' | 'liste'
 
   return (
     <View style={styles.container}>
@@ -67,9 +68,21 @@ export default function HaritaScreen() {
             <Ionicons name="search" size={16} color={Colors.gray} />
             <Text style={styles.aramaPlaceholder}>{t('map_search')}</Text>
           </View>
-          <TouchableOpacity style={styles.filtreBtnMap}>
-            <Ionicons name="options-outline" size={18} color={Colors.gold} />
-          </TouchableOpacity>
+          {/* Harita / Liste toggle */}
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, goruntuleme === 'harita' && styles.toggleBtnAktif]}
+              onPress={() => setGoruntuleme('harita')}
+            >
+              <Ionicons name="map-outline" size={15} color={goruntuleme === 'harita' ? '#0A0A0A' : Colors.gray} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, goruntuleme === 'liste' && styles.toggleBtnAktif]}
+              onPress={() => setGoruntuleme('liste')}
+            >
+              <Ionicons name="list-outline" size={15} color={goruntuleme === 'liste' ? '#0A0A0A' : Colors.gray} />
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
 
         {/* Konumum butonu */}
@@ -122,50 +135,97 @@ export default function HaritaScreen() {
         )}
       </View>
 
-      {/* Alt liste */}
-      <View style={styles.altListe}>
-        <View style={styles.altBaslik}>
-          <Text style={[styles.altBaslikText, isRTL && { textAlign: 'right' }]}>{t('map_nearby')}</Text>
-          <Text style={styles.altAdet}>{BERBERLER.length} {t('results')}</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.yatayListeRow}
-        >
-          {BERBERLER.map((b) => {
-            const minFiyat = Math.min(...b.hizmetler.map(h => h.fiyat));
-            const aktif = seciliBerber?.id === b.id;
-            return (
-              <TouchableOpacity
-                key={b.id}
-                style={[styles.miniKart, aktif && styles.miniKartAktif]}
-                onPress={() => {
-                  setSeciliBerber(b);
-                  router.push(`/berber/${b.id}`);
-                }}
-                activeOpacity={0.85}
-              >
-                <Image
-                  source={{ uri: b.kapakFoto }}
-                  style={styles.miniKartFoto}
-                  contentFit="cover"
-                />
-                <View style={styles.miniKartBilgi}>
-                  <Text style={styles.miniKartAd} numberOfLines={1}>{b.dukkAn}</Text>
-                  <View style={styles.miniKartMeta}>
-                    <Ionicons name="location-outline" size={10} color={Colors.gold} />
-                    <Text style={styles.miniKartMetaText}>{b.mesafe}</Text>
-                    <Ionicons name="star" size={10} color={Colors.gold} />
-                    <Text style={styles.miniKartMetaText}>{b.puan}</Text>
+      {/* Alt: yatay mini liste (harita görünümünde) */}
+      {goruntuleme === 'harita' && (
+        <View style={styles.altListe}>
+          <View style={styles.altBaslik}>
+            <Text style={[styles.altBaslikText, isRTL && { textAlign: 'right' }]}>{t('map_nearby')}</Text>
+            <Text style={styles.altAdet}>{BERBERLER.length} {t('results')}</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.yatayListeRow}
+          >
+            {BERBERLER.map((b) => {
+              const minFiyat = Math.min(...b.hizmetler.map(h => h.fiyat));
+              const aktif = seciliBerber?.id === b.id;
+              return (
+                <TouchableOpacity
+                  key={b.id}
+                  style={[styles.miniKart, aktif && styles.miniKartAktif]}
+                  onPress={() => {
+                    setSeciliBerber(b);
+                    router.push(`/berber/${b.id}`);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Image
+                    source={{ uri: b.kapakFoto }}
+                    style={styles.miniKartFoto}
+                    contentFit="cover"
+                  />
+                  <View style={styles.miniKartBilgi}>
+                    <Text style={styles.miniKartAd} numberOfLines={1}>{b.dukkAn}</Text>
+                    <View style={styles.miniKartMeta}>
+                      <Ionicons name="location-outline" size={10} color={Colors.gold} />
+                      <Text style={styles.miniKartMetaText}>{b.mesafe}</Text>
+                      <Ionicons name="star" size={10} color={Colors.gold} />
+                      <Text style={styles.miniKartMetaText}>{b.puan}</Text>
+                    </View>
+                    <Text style={styles.miniKartFiyat}>₺{minFiyat}'den</Text>
                   </View>
-                  <Text style={styles.miniKartFiyat}>₺{minFiyat}'den</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Liste görünümü */}
+      {goruntuleme === 'liste' && (
+        <View style={styles.listeGorunumu}>
+          <SafeAreaView edges={['top']} style={styles.listeUstBar}>
+            <Text style={styles.listeBaslik}>{t('map_nearby')}</Text>
+            <Text style={styles.listeAdet}>{BERBERLER.length} {t('results')}</Text>
+          </SafeAreaView>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {BERBERLER.map((b) => {
+              const minFiyat = Math.min(...b.hizmetler.map(h => h.fiyat));
+              return (
+                <TouchableOpacity
+                  key={b.id}
+                  style={styles.listeKart}
+                  onPress={() => router.push(`/berber/${b.id}`)}
+                  activeOpacity={0.88}
+                >
+                  <Image source={{ uri: b.kapakFoto }} style={styles.listeKartFoto} contentFit="cover" />
+                  <View style={styles.listeKartBilgi}>
+                    <View style={styles.listeKartUst}>
+                      <Text style={styles.listeKartAd} numberOfLines={1}>{b.dukkAn}</Text>
+                      <View style={styles.listePuan}>
+                        <Ionicons name="star" size={11} color={Colors.gold} />
+                        <Text style={styles.listePuanText}>{b.puan}</Text>
+                        <Text style={styles.listeYorum}>({b.yorumSayisi})</Text>
+                      </View>
+                    </View>
+                    <View style={styles.listeMeta}>
+                      <Ionicons name="location-outline" size={11} color={Colors.gold} />
+                      <Text style={styles.listeMetaText}>{b.ilce} · {b.mesafe}</Text>
+                    </View>
+                    <View style={styles.listeAlt}>
+                      <Text style={styles.listeFiyat}>₺{minFiyat}'den</Text>
+                      <View style={styles.listeRandevuBtn}>
+                        <Text style={styles.listeRandevuText}>{t('book_now')}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 }
@@ -334,4 +394,59 @@ const styles = StyleSheet.create({
   },
   miniKartMetaText: { fontSize: 10, color: Colors.gray },
   miniKartFiyat: { fontSize: 12, fontWeight: '700', color: Colors.gold },
+
+  // Harita/Liste toggle
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(15,15,15,0.9)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  toggleBtn: {
+    width: 38, height: 38,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  toggleBtnAktif: { backgroundColor: Colors.gold },
+
+  // Liste görünümü (tam ekran)
+  listeGorunumu: {
+    flex: 1, backgroundColor: Colors.bg,
+  },
+  listeUstBar: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingTop: 8, paddingBottom: 12,
+    borderBottomWidth: 1, borderBottomColor: Colors.cardBorder,
+  },
+  listeBaslik: { fontSize: 17, fontWeight: '800', color: Colors.white },
+  listeAdet: { fontSize: 12, color: Colors.gray },
+
+  // Liste görünüm kartı
+  listeKart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.cardBorder,
+  },
+  listeKartFoto: { width: 76, height: 76, borderRadius: 12 },
+  listeKartBilgi: { flex: 1, gap: 4 },
+  listeKartUst: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  listeKartAd: { fontSize: 14, fontWeight: '700', color: Colors.white, flexShrink: 1 },
+  listePuan: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  listePuanText: { fontSize: 12, fontWeight: '700', color: Colors.gold },
+  listeYorum: { fontSize: 10, color: Colors.gray },
+  listeMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  listeMetaText: { fontSize: 11, color: Colors.gray },
+  listeAlt: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  listeFiyat: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  listeRandevuBtn: {
+    backgroundColor: Colors.gold, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 5,
+  },
+  listeRandevuText: { fontSize: 11, fontWeight: '800', color: '#0A0A0A' },
 });
